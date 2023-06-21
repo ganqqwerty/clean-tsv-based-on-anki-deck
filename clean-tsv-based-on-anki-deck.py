@@ -1,6 +1,10 @@
 from anki.collection import Collection
 import csv
 import argparse
+import logging
+
+# Enable logging
+logging.basicConfig(level=logging.ERROR)
 
 # Create the parser
 parser = argparse.ArgumentParser(description='Filter a TSV file based on an Anki deck.')
@@ -23,11 +27,16 @@ collection.decks.select(deck_id)
 note_ids = collection.decks.cids(deck_id)
 notes = []
 for id in note_ids:
-    notes.append(collection.get_note(id))
+    try:
+        notes.append(collection.get_card(id).note())
+    except Exception as e:
+        logging.error(f'Failed to get note with id {id}, error: {str(e)}')
 
 # Get the "Kanji" field of all the notes
 kanji_field = 'Kanji'
-kanjis_in_deck = [note.fields[note._model['flds'].index(kanji_field)] for note in notes]
+kanjis_in_deck = []
+for note in notes:
+    kanjis_in_deck.append(note[kanji_field])
 
 # Read the TSV file and filter the lines
 with open(args.input_tsv, 'r', newline='', encoding='utf-8') as input_file, open(args.output_tsv, 'w', newline='', encoding='utf-8') as output_file:
